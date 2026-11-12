@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import type { SupportActionResult, SupportLink } from '../shared/branding'
 import type {
   AppSettings,
   CapabilityMatrix,
@@ -27,6 +28,12 @@ export interface InitDataPayload {
 
 const compressorApi = {
   getInitData: (): Promise<InitDataPayload> => ipcRenderer.invoke('app:getInitData'),
+
+  openSupportLink: (target: SupportLink): Promise<SupportActionResult> =>
+    ipcRenderer.invoke('support:openLink', target),
+
+  copySupportPhone: (): Promise<SupportActionResult> =>
+    ipcRenderer.invoke('support:copyPhone'),
 
   getPathForDroppedFile: (file: File): string => {
     try {

@@ -6,9 +6,9 @@
 - **Electron**: `33.2.0` (`win32-x64`)
 - **Các Engine thực thi đóng gói ngoài ASAR (`resources/bin`)**:
   - `Sharp`: `0.33.5` (`libvips 8.15.3`, giải nén tại `app.asar.unpacked/node_modules`)
-  - `FFmpeg`: `6.0-essentials_build` (`ffmpeg.exe`, SHA-256: `e9fd5e711debab9d680955fc1e38a2c1160fd280b144476cc3f62bc43ef49db1`)
-  - `ffprobe`: `4.0.2` (`ffprobe.exe`, SHA-256: `4303ec85855340689b1f8aa5d9c1dc06ef3e3090682de3034edc3fca2b0798d5`)
-  - `QPDF`: `12.4.2 MSVC x64` (`qpdf.exe`, SHA-256: `1bdaf878f37eaffea1ea3c30591214c77636a0f2fc7432427516b6e22e36c0ff`)
+  - `FFmpeg`: `6.0-essentials_build` (`ffmpeg.exe`, `--enable-gpl --enable-version3`, SHA-256: `e9fd5e711debab9d680955fc1e38a2c1160fd280b144476cc3f62bc43ef49db1`)
+  - `ffprobe`: `4.0.2` (`ffprobe.exe`, `--enable-gpl --enable-version3`, SHA-256: `4303ec85855340689b1f8aa5d9c1dc06ef3e3090682de3034edc3fca2b0798d5`)
+  - `QPDF`: `12.4.2 MSVC x64` (`qpdf.exe`, SHA-256: `1bdaf878f37eaffea1ea3c30591214c77636a0f2fc7432427516b6e22e36c0ff`, kèm `qpdf30.dll` và 8 DLL MSVC runtime x64)
   - `7-Zip`: `21.07 x64` (`7za.exe`, SHA-256: `b0cfdeaf429f5cc53f85123dd8f5a5feb92c19d31aa34df257edf9a26be05f95`)
 
 ---
@@ -54,17 +54,25 @@
 
 ---
 
-## 3. Kiểm thử Đóng gói & Cài đặt Thực tế (`Setup .exe`)
-- **Đường dẫn Artifact**: `P:\03-Tools\Compress-Files\release\File Compressor-Setup-1.0.0-x64.exe`
-- **Dung lượng**: `132,398,642 bytes` (~`126.26 MiB`)
-- **SHA-256**: `2FAB2431916E7804614FA165E912E2824D1EFCAEE66EFBF2B2715B2BE8A7DCA3`
+## 3. Kiểm thử Đóng gói, Nội dung ASAR & Cài đặt Thực tế (`Setup .exe`)
+- **Đường dẫn Artifact**: `release/File Compressor-Setup-1.0.0-x64.exe`
+- **File đối chiếu SHA-256 & Manifest**: `release/File Compressor-Setup-1.0.0-x64.exe.sha256` & `release/RELEASE_MANIFEST.json` *(xem giá trị SHA-256 chính xác của bản build cuối tại hai file này trong thư mục `release/` để tránh lệch vòng lặp hash khi commit)*.
+- **Metadata thực thi (`FileCompressor.exe` VersionInfo)**:
+  - `ProductName`: `File Compressor`
+  - `CompanyName`: `Ngọc Huy Dev - Ocean Labs`
+  - `LegalCopyright`: `Copyright © 2026 Ngọc Huy Dev - Ocean Labs`
+  - `FileVersion`: `1.0.0`
+- **Kiểm tra cấu trúc gói (`win-unpacked`)**:
+  - `resources/app.asar`: Chỉ chứa bundle runtime (`out/main`, `out/preload`, `out/renderer`, `package.json`, `resources/icon.png` và runtime dependencies cần thiết); không lẫn `src/`, `tests/`, `docs/`, `scripts/`, `local-handoff/`, `.patch` hay `*.tsbuildinfo`.
+  - `resources/app.asar.unpacked`: Chứa `sharp` và `@img/sharp-win32-x64` (`libvips`).
+  - `resources/bin`: Chứa đủ `ffmpeg.exe`, `ffprobe.exe`, `qpdf.exe`, `qpdf30.dll` (+ 8 MSVC runtime DLLs) và `7za.exe`.
+  - `resources/notices` & `resources/LICENSE`: Chứa `BINARY_MANIFEST.json`, `THIRD_PARTY_NOTICES.txt`, `LICENSE-GPLv3.txt`, `FFMPEG_BUILD_INFO.txt` và `LICENSE`.
 - **Kiểm tra cài đặt thực tế**:
   - Chạy cài đặt NSIS (`/S /D=...`) vào thư mục độc lập thành công.
   - Xác nhận đầy đủ `resources/bin/ffmpeg.exe`, `ffprobe.exe`, `qpdf.exe` (+ DLLs), `7za.exe` và `resources/app.asar.unpacked/node_modules/sharp` hoạt động độc lập không cần Node/npm hay PATH hệ thống.
   - Trình gỡ cài đặt (`Uninstall File Compressor.exe`) hoạt động chuẩn xác.
-  - Ghi chú về Code Signing: Bản cài đặt hiện tại là **Unsigned artifact** phục vụ kiểm thử nội bộ (do không có chứng thư số thương mại được cấp trong môi trường).
+  - Ghi chú về Code Signing: Bản cài đặt hiện tại là **Unsigned artifact** (do không có chứng thư số thương mại được cấp trong môi trường).
 
 ## 4. Hạn chế Đã Công bố Rõ
 - Không hỗ trợ nén trực tiếp ảnh động (GIF/APNG/WebP động), ảnh RAW/HEIC, hoặc video HDR/10-bit/Dolby Vision (hệ thống tự động phát hiện và báo `unsupported` thay vì làm hỏng màu sắc hoặc mất frame).
 - Với PDF chỉ sử dụng tối ưu cấu trúc và nén lại stream không mất dữ liệu qua `qpdf`; không tự động giảm độ phân giải (downsample) ảnh scan bên trong PDF để tránh làm mờ chữ tài liệu.
-

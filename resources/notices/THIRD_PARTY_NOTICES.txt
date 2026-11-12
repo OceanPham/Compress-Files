@@ -1,27 +1,37 @@
 THIRD-PARTY SOFTWARE NOTICES AND LICENSES
 =========================================
 
-File Compressor bundles the following standalone command-line tools and libraries for offline local file compression on Windows x64:
+File Compressor is distributed under the GNU General Public License v3.0 or later (GPL-3.0-or-later).
+See LICENSE / notices/LICENSE-GPLv3.txt for the full text of the GNU General Public License v3.0.
 
-1. FFmpeg & ffprobe
-   - Version: ffmpeg version 6.0-essentials_build-www.gyan.dev Copyright (c) 2000-2023 the FFmpeg developers | built with gcc 12.2.0 (Rev10, Built by MSYS2 project)
-   - SHA-256 (ffmpeg.exe): e9fd5e711debab9d680955fc1e38a2c1160fd280b144476cc3f62bc43ef49db1
-   - SHA-256 (ffprobe.exe): 4303ec85855340689b1f8aa5d9c1dc06ef3e3090682de3034edc3fca2b0798d5
-   - License: GPLv3 / LGPLv3
-   - Source & Legal Information: https://ffmpeg.org/legal.html
+File Compressor bundles the following standalone command-line tools and native libraries in extraResources/unpacked directories for 100% offline local file compression on Windows x64:
 
-2. QPDF
+1. FFmpeg (ffmpeg.exe) & ffprobe (ffprobe.exe)
+   - ffmpeg.exe Version: ffmpeg version 6.0-essentials_build-www.gyan.dev Copyright (c) 2000-2023 the FFmpeg developers | built with gcc 12.2.0 (Rev10, Built by MSYS2 project)
+   - ffmpeg.exe SHA-256: e9fd5e711debab9d680955fc1e38a2c1160fd280b144476cc3f62bc43ef49db1
+   - ffmpeg.exe Build Config: Compiled with --enable-gpl --enable-version3 (gyan.dev 6.0-essentials_build, upstream FFmpeg commit https://github.com/FFmpeg/FFmpeg/commit/ea3d24bbe3, distributed via https://github.com/eugeneware/ffmpeg-static/releases/tag/b6.0)
+   - ffprobe.exe Version: ffprobe version 4.0.2 Copyright (c) 2007-2018 the FFmpeg developers | built with gcc 7.3.1 (GCC) 20180722
+   - ffprobe.exe SHA-256: 4303ec85855340689b1f8aa5d9c1dc06ef3e3090682de3034edc3fca2b0798d5
+   - ffprobe.exe Build Config: Compiled with --enable-gpl --enable-version3 (FFmpeg 4.0.2, upstream source https://ffmpeg.org/releases/ffmpeg-4.0.2.tar.xz)
+   - License: GNU General Public License v3.0 or later (GPL-3.0-or-later)
+   - Legal & Source Information: https://ffmpeg.org/legal.html & https://www.gyan.dev/ffmpeg/builds/
+   - Full License Text: Included in notices/LICENSE-GPLv3.txt and root LICENSE.
+   - Build Info: Included in notices/FFMPEG_BUILD_INFO.txt.
+
+2. QPDF (qpdf.exe & companion DLLs: qpdf30.dll, MSVC runtime DLLs)
    - Version: qpdf version 12.4.2 | Run qpdf --copyright to see copyright and license information.
    - SHA-256 (qpdf.exe): 1bdaf878f37eaffea1ea3c30591214c77636a0f2fc7432427516b6e22e36c0ff
    - License: Apache License 2.0
-   - Source: https://github.com/qpdf/qpdf
+   - Official Binary Release: https://github.com/qpdf/qpdf/releases/download/v12.4.2/qpdf-12.4.2-msvc64.zip
+   - Official Source Code: https://github.com/qpdf/qpdf/releases/tag/v12.4.2
 
 3. 7-Zip Standalone Console (7za.exe)
    - Version: | 7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
    - SHA-256 (7za.exe): b0cfdeaf429f5cc53f85123dd8f5a5feb92c19d31aa34df257edf9a26be05f95
-   - License: GNU LGPL + BSD 3-clause
-   - Source: https://www.7-zip.org/
+   - License: GNU LGPL v2.1 or later + BSD 3-Clause (Used strictly for .zip and .7z archives; unRAR code is not used to create RAR archives)
+   - Official License & Source Code: https://www.7-zip.org/license.txt | https://www.7-zip.org/a/7z2107-src.7z
 
-4. Sharp & libvips
-   - License: Apache License 2.0 (Sharp) / LGPL-2.1-or-later (libvips)
-   - Source: https://sharp.pixelplumbing.com/
+4. Sharp & libvips (@img/sharp-win32-x64, @img/sharp-libvips-win32-x64)
+   - Version: sharp 0.33.5 (libvips 8.15.3)
+   - License: Apache License 2.0 (Sharp) / GNU LGPL v2.1 or later (libvips)
+   - Source: https://github.com/lovell/sharp & https://github.com/libvips/libvips

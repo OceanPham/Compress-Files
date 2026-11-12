@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "Ứng dụng nén và tối ưu dung lượng Ảnh, Video, PDF và tạo Archive ZIP/7z cục bộ cho Windows x64",
   "main": "./out/main/index.js",
-  "author": "File Compressor Team",
+  "author": {
+    "name": "Ngọc Huy Dev - Ocean Labs",
+    "url": "https://oceanlabs.pro.vn/"
+  },
+  "homepage": "https://oceanlabs.pro.vn/",
   "license": "GPL-3.0-or-later",
   "private": true,
   "scripts": {
@@ -12,6 +16,7 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
+    "dist": "npm run dist:win",
     "dist:win": "electron-vite build && electron-builder --win nsis --x64",
     "prepare:binaries": "node scripts/prepare-binaries.mjs",
     "generate:icons": "node scripts/generate-icons.mjs"

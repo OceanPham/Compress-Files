@@ -1,5 +1,6 @@
 appId: com.filecompressor.desktop
 productName: File Compressor
+copyright: Copyright © 2026 Ngọc Huy Dev - Ocean Labs
 directories:
   buildResources: build
   output: release
@@ -7,12 +8,16 @@ files:
   - '!**/.vscode/*'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,README.MD,PROGRESS.md,HUONG_DAN.md,PROMPT_CHO_AGENT.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json,postcss.config.js,tailwind.config.js}'
+  - '!*.{tsbuildinfo,patch,zip,log}'
   - '!tests/*'
   - '!docs/*'
   - '!scripts/*'
+  - '!local-handoff/*'
+  - '!tmp-test/*'
+  - '!coverage/*'
   - '!resources/bin/*'
   - '!**/node_modules/ffmpeg-static/**/*'
   - '!**/node_modules/ffprobe-static/**/*'
@@ -30,6 +35,8 @@ extraResources:
     to: notices
     filter:
       - '**/*'
+  - from: LICENSE
+    to: LICENSE
 win:
   executableName: FileCompressor
   icon: build/icon.ico
@@ -51,4 +58,3 @@ nsis:
   uninstallerIcon: build/icon.ico
   deleteAppDataOnUninstall: false
 npmRebuild: false
-

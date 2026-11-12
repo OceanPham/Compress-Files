@@ -3,7 +3,14 @@ out/
 dist/
 release/
 resources/bin/
+resources/qpdf-win64.zip
+resources/qpdf-extract/
 tmp-test/
+coverage/
+local-handoff/
+*.tsbuildinfo
 *.log
 .DS_Store
-
+Thumbs.db
+.env
+.env.*

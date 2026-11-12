@@ -45,11 +45,14 @@ import { VI_STRINGS } from './i18n/vi'
 import { StatusBadge } from './components/StatusBadge'
 import { ImagePreviewModal } from './components/ImagePreviewModal'
 import { ConfigSidebar } from './components/ConfigSidebar'
+import { AuthorCredit } from './components/AuthorCredit'
+import { AboutCard } from './components/AboutCard'
 
 type NavTab = 'media' | 'archive' | 'history' | 'settings'
 
 export const App: React.FC = () => {
   const [navTab, setNavTab] = useState<NavTab>('media')
+  const [aboutRequest, setAboutRequest] = useState(0)
   const [appVersion, setAppVersion] = useState<string>('1.0.0')
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS)
   const [presets, setPresets] = useState<UserPreset[]>([])
@@ -86,6 +89,11 @@ export const App: React.FC = () => {
       setToastMessage((prev) => (prev === msg ? null : prev))
     }, 4000)
   }
+
+  // Focus the About card after opening it from the author credit.
+  useEffect(() => {
+    if (aboutRequest > 0) document.getElementById('about-contact-heading')?.focus()
+  }, [aboutRequest])
 
   // Initial load & IPC listener
   useEffect(() => {
@@ -502,8 +510,12 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom Engine Status & Theme Switcher */}
+        {/* Author, Engine Status & Theme Switcher */}
         <div className="p-3 border-t border-slate-800 space-y-3 text-xs">
+          <AuthorCredit onOpenAbout={() => {
+            setNavTab('settings')
+            setAboutRequest((request) => request + 1)
+          }} />
           <div className="p-2.5 rounded-lg bg-slate-800/70 space-y-1.5">
             <div className="flex items-center justify-between text-[11px] text-slate-400">
               <span>Trạng thái Engine</span>
@@ -1368,11 +1380,13 @@ export const App: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-4xl mx-auto space-y-6">
               <div>
-                <h1 className="text-lg font-bold">Cài đặt Ứng dụng & Năng lực Hệ thống</h1>
+                <h1 className="text-lg font-bold">Cài đặt & Hỗ trợ</h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Cấu hình giới hạn tài nguyên xử lý song song, hành vi chạy nền và bảng đối chiếu định dạng đã kiểm chứng.
+                  Thông tin ứng dụng, liên hệ tác giả và cấu hình tài nguyên xử lý.
                 </p>
               </div>
+
+              <AboutCard appVersion={appVersion} />
 
               {/* Resource & Concurrency Settings */}
               <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">

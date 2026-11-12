@@ -3,6 +3,7 @@ import path from 'node:path'
 import {
   app,
   BrowserWindow,
+  clipboard,
   dialog,
   ipcMain,
   IpcMainInvokeEvent,
@@ -23,6 +24,7 @@ import {
   UserPreset
 } from '../shared/types'
 import { sanitizeJobConfig } from '../shared/presets'
+import { APP_BRANDING, type SupportActionResult } from '../shared/branding'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -103,7 +105,7 @@ function createMainWindow(): void {
     minWidth: 940,
     minHeight: 620,
     show: false,
-    title: 'File Compressor',
+    title: `File Compressor — ${APP_BRANDING.organization}`,
     icon: getAppIconPath(),
     autoHideMenuBar: true,
     webPreferences: {
@@ -183,6 +185,30 @@ function createMainWindow(): void {
 }
 
 function registerIpcHandlers(): void {
+  ipcMain.handle('support:openLink', async (e, target: unknown): Promise<SupportActionResult> => {
+    validateIpcSender(e)
+    // Only fixed, trusted destinations are accepted across the renderer boundary.
+    if (target !== 'website' && target !== 'zalo') {
+      return { ok: false, error: 'Liên kết hỗ trợ không hợp lệ.' }
+    }
+    try {
+      await shell.openExternal(target === 'website' ? APP_BRANDING.websiteUrl : APP_BRANDING.zaloUrl)
+      return { ok: true }
+    } catch {
+      return { ok: false, error: 'Không mở được trình duyệt. Vui lòng truy cập địa chỉ hiển thị bên trên.' }
+    }
+  })
+
+  ipcMain.handle('support:copyPhone', (e): SupportActionResult => {
+    validateIpcSender(e)
+    try {
+      clipboard.writeText(APP_BRANDING.supportPhone)
+      return { ok: true }
+    } catch {
+      return { ok: false, error: 'Không sao chép được số Zalo. Vui lòng thử lại.' }
+    }
+  })
+
   ipcMain.handle('app:getInitData', async (e) => {
     validateIpcSender(e)
     const capabilities = await probeCapabilities()
