@@ -119,3 +119,4 @@ const compressorApi = {
 contextBridge.exposeInMainWorld('compressorApi', compressorApi)
 
 export type CompressorApiType = typeof compressorApi
+

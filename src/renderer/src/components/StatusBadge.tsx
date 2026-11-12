@@ -11,7 +11,7 @@ import {
   Target,
   XCircle
 } from 'lucide-react'
-import { JobStatus } from '../../../../shared/types'
+import { JobStatus } from '@shared/types'
 import { VI_STRINGS } from '../i18n/vi'
 
 interface StatusBadgeProps {

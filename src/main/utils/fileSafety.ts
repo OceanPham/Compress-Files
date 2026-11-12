@@ -505,3 +505,4 @@ export function scanPathsForMediaImport(inputPaths: string[]): {
 
   return { discovered, skipped }
 }
+

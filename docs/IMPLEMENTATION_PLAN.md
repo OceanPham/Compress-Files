@@ -24,3 +24,4 @@ Xây dựng ứng dụng desktop **File Compressor** cho Windows x64 (bản cài
 - **Mốc E**: Hoàn thiện Module PDF (`qpdf` structural/stream compression, phát hiện mật khẩu/chữ ký số, page count verification) & Module Archive (`7za` ZIP/7z creation, root folder collision resolution, integrity verification).
 - **Mốc F**: Kiểm thử rủi ro thực tế với bộ fixture đầy đủ (Ảnh, Video, PDF, Archive, Queue/App edge cases), Visual QA, đóng gói bản Setup `.exe` cuối cùng và kiểm tra hoạt động thực tế.
 - **Mốc G**: Hoàn thiện toàn bộ tài liệu bàn giao (`README.md`, `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, `docs/FORMAT_SUPPORT.md`, `docs/TEST_REPORT.md`, `docs/THIRD_PARTY_NOTICES.md`, `PROGRESS.md`) và tổng kết SHA-256 artifact.
+

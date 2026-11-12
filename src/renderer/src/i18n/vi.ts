@@ -1,4 +1,4 @@
-import { JobCategory, JobStatus, PresetTier } from '../../../shared/types'
+import { JobCategory, JobStatus, PresetTier } from '@shared/types'
 
 export const VI_STRINGS = {
   appName: 'File Compressor',

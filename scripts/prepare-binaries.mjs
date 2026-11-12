@@ -158,8 +158,41 @@ function getBinaryVersion(exePath, args) {
   }
 }
 
+async function ensureWinCodeSignCache(sevenZaPath) {
+  if (process.platform !== 'win32') return
+  const localAppData = process.env.LOCALAPPDATA
+  if (!localAppData) return
+  const cacheDir = path.join(
+    localAppData,
+    'electron-builder',
+    'Cache',
+    'winCodeSign',
+    'winCodeSign-2.6.0'
+  )
+  if (fs.existsSync(path.join(cacheDir, 'rcedit-x64.exe'))) {
+    return
+  }
+  try {
+    fs.mkdirSync(cacheDir, { recursive: true })
+    const res = await fetch(
+      'https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z'
+    )
+    if (!res.ok) return
+    const archivePath = path.join(cacheDir, '..', 'winCodeSign-2.6.0.7z')
+    fs.writeFileSync(archivePath, Buffer.from(await res.arrayBuffer()))
+    execFileSync(sevenZaPath, ['x', archivePath, `-o${cacheDir}`, '-xr!darwin', '-y'], {
+      stdio: 'ignore'
+    })
+    fs.rmSync(archivePath, { force: true })
+    console.log('[prepare-binaries] Prepared winCodeSign-2.6.0 cache for non-admin Windows build')
+  } catch {
+    // ignore
+  }
+}
+
 async function main() {
   const sevenZaPath = await ensure7za()
+  await ensureWinCodeSignCache(sevenZaPath)
   const { destFfmpeg, destFfprobe } = await ensureFfmpegAndFfprobe()
   const { destQpdf, releaseUrl } = await ensureQpdf(sevenZaPath)
 

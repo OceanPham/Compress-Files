@@ -13,7 +13,7 @@ import {
   formatBytes,
   ImageConfig,
   ImagePreviewResponse
-} from '../../../../shared/types'
+} from '@shared/types'
 
 interface ImagePreviewModalProps {
   job: CompressionJob

@@ -24,8 +24,8 @@ import {
   MultiSizeSpec,
   PresetTier,
   UserPreset
-} from '../../../../shared/types'
-import { cloneConfig, createConfigForTier } from '../../../../shared/presets'
+} from '@shared/types'
+import { cloneConfig, createConfigForTier } from '@shared/presets'
 
 interface ConfigSidebarProps {
   activeConfig: JobConfigSnapshot

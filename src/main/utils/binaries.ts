@@ -292,3 +292,4 @@ export async function probeCapabilities(forceRefresh = false): Promise<Capabilit
 
   return cachedCapabilities
 }
+

@@ -340,3 +340,4 @@ export function formatBytes(bytes: number, useBinary = false): string {
   const val = bytes / Math.pow(base, i)
   return `${val >= 100 || i === 0 ? val.toFixed(0) : val.toFixed(2)} ${units[i]}`
 }
+

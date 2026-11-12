@@ -60,9 +60,14 @@ export async function probeImageFile(filePath: string): Promise<{
     }
 
     const depth = String(meta.depth || 'uchar')
-    if (['ushort', 'uint', 'float', 'double'].includes(depth)) {
+    const space = String(meta.space || 'srgb').toLowerCase()
+    if (
+      ['ushort', 'uint', 'float', 'double'].includes(depth) ||
+      space === 'rgb16' ||
+      space === 'grey16'
+    ) {
       return {
-        unsupportedReason: `Ảnh có chiều sâu màu cao (${depth} / >8-bit HDR/RAW) không được tự động hạ bit-depth trong chế độ nén chuẩn.`
+        unsupportedReason: `Ảnh có chiều sâu màu cao (${depth}/${space} >8-bit HDR/RAW) không được tự động hạ bit-depth trong chế độ nén chuẩn.`
       }
     }
 

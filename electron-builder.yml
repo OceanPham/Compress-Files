@@ -51,3 +51,4 @@ nsis:
   uninstallerIcon: build/icon.ico
   deleteAppDataOnUninstall: false
 npmRebuild: false
+
