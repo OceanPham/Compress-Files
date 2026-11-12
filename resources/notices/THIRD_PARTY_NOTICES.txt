@@ -1,0 +1,27 @@
+THIRD-PARTY SOFTWARE NOTICES AND LICENSES
+=========================================
+
+File Compressor bundles the following standalone command-line tools and libraries for offline local file compression on Windows x64:
+
+1. FFmpeg & ffprobe
+   - Version: ffmpeg version 6.0-essentials_build-www.gyan.dev Copyright (c) 2000-2023 the FFmpeg developers | built with gcc 12.2.0 (Rev10, Built by MSYS2 project)
+   - SHA-256 (ffmpeg.exe): e9fd5e711debab9d680955fc1e38a2c1160fd280b144476cc3f62bc43ef49db1
+   - SHA-256 (ffprobe.exe): 4303ec85855340689b1f8aa5d9c1dc06ef3e3090682de3034edc3fca2b0798d5
+   - License: GPLv3 / LGPLv3
+   - Source & Legal Information: https://ffmpeg.org/legal.html
+
+2. QPDF
+   - Version: qpdf version 12.4.2 | Run qpdf --copyright to see copyright and license information.
+   - SHA-256 (qpdf.exe): 1bdaf878f37eaffea1ea3c30591214c77636a0f2fc7432427516b6e22e36c0ff
+   - License: Apache License 2.0
+   - Source: https://github.com/qpdf/qpdf
+
+3. 7-Zip Standalone Console (7za.exe)
+   - Version: | 7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+   - SHA-256 (7za.exe): b0cfdeaf429f5cc53f85123dd8f5a5feb92c19d31aa34df257edf9a26be05f95
+   - License: GNU LGPL + BSD 3-clause
+   - Source: https://www.7-zip.org/
+
+4. Sharp & libvips
+   - License: Apache License 2.0 (Sharp) / LGPL-2.1-or-later (libvips)
+   - Source: https://sharp.pixelplumbing.com/

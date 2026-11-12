@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-11-12T14:21:37.079Z",
+  "platform": "win32-x64",
+  "binaries": {
+    "ffmpeg": {
+      "file": "ffmpeg.exe",
+      "version": "ffmpeg version 6.0-essentials_build-www.gyan.dev Copyright (c) 2000-2023 the FFmpeg developers | built with gcc 12.2.0 (Rev10, Built by MSYS2 project)",
+      "sha256": "e9fd5e711debab9d680955fc1e38a2c1160fd280b144476cc3f62bc43ef49db1",
+      "sizeBytes": 81114624,
+      "license": "GPLv3 / LGPLv3 (FFmpeg Project)",
+      "sourceUrl": "https://ffmpeg.org/legal.html"
+    },
+    "ffprobe": {
+      "file": "ffprobe.exe",
+      "version": "ffprobe version 4.0.2 Copyright (c) 2007-2018 the FFmpeg developers | built with gcc 7.3.1 (GCC) 20180722",
+      "sha256": "4303ec85855340689b1f8aa5d9c1dc06ef3e3090682de3034edc3fca2b0798d5",
+      "sizeBytes": 63059968,
+      "license": "GPLv3 / LGPLv3 (FFmpeg Project)",
+      "sourceUrl": "https://ffmpeg.org/legal.html"
+    },
+    "qpdf": {
+      "file": "qpdf.exe",
+      "version": "qpdf version 12.4.2 | Run qpdf --copyright to see copyright and license information.",
+      "sha256": "1bdaf878f37eaffea1ea3c30591214c77636a0f2fc7432427516b6e22e36c0ff",
+      "sizeBytes": 19456,
+      "license": "Apache-2.0",
+      "sourceUrl": "https://github.com/qpdf/qpdf/releases/download/v12.4.2/qpdf-12.4.2-msvc64.zip"
+    },
+    "sevenZip": {
+      "file": "7za.exe",
+      "version": "| 7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26",
+      "sha256": "b0cfdeaf429f5cc53f85123dd8f5a5feb92c19d31aa34df257edf9a26be05f95",
+      "sizeBytes": 1231360,
+      "license": "LGPL-2.1-or-later with unRAR restriction (7-Zip Standalone Console)",
+      "sourceUrl": "https://www.7-zip.org/license.txt"
+    }
+  }
+}
