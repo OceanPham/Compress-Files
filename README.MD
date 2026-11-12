@@ -97,7 +97,7 @@ Sau khi chạy `npm run dist:win`, bộ cài đặt được xuất tại:
   - `QPDF 12.4.2`: `Apache-2.0`.
   - `7-Zip Standalone Console (7za 21.07)`: `LGPL-2.1-or-later` + `BSD-3-Clause`.
   - `Sharp 0.33.5` & `libvips 8.15.3`: `Apache-2.0` / `LGPL-2.1-or-later`.
-  - Chi tiết phiên bản, cấu hình build, mã băm SHA-256 và đường dẫn mã nguồn gốc của từng thành phần được ghi đầy đủ tại [`docs/THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md) và đóng gói kèm ứng dụng tại `resources/notices/`.
+  - Chi tiết phiên bản, cấu hình build, mã băm SHA-256 và trạng thái xác minh **Mã nguồn tương ứng (Corresponding Source)** (bao gồm các phần đã xác minh và các thư viện liên kết tĩnh của `ffmpeg.exe`/`ffprobe.exe` đang chờ bổ sung nguồn trước khi chốt phát hành công khai) được ghi rõ tại [`docs/CORRESPONDING_SOURCE.md`](docs/CORRESPONDING_SOURCE.md) và [`docs/THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md).
 
 ---
 
@@ -106,6 +106,7 @@ Sau khi chạy `npm run dist:win`, bộ cài đặt được xuất tại:
 ### Danh mục tài liệu kỹ thuật
 - [Thay đổi qua các phiên bản (`CHANGELOG.md`)](CHANGELOG.md)
 - [Ghi chú phát hành v1.0.0 (`docs/RELEASE_NOTES_v1.0.0.md`)](docs/RELEASE_NOTES_v1.0.0.md)
+- [Hồ sơ đối chiếu mã nguồn tương ứng (`docs/CORRESPONDING_SOURCE.md`)](docs/CORRESPONDING_SOURCE.md)
 - [Kế hoạch triển khai (`docs/IMPLEMENTATION_PLAN.md`)](docs/IMPLEMENTATION_PLAN.md)
 - [Đặc tả sản phẩm (`docs/PRODUCT_SPEC.md`)](docs/PRODUCT_SPEC.md)
 - [Kiến trúc hệ thống (`docs/ARCHITECTURE.md`)](docs/ARCHITECTURE.md)
