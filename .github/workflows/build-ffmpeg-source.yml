@@ -7,10 +7,6 @@ on:
         description: 'FFmpeg source commit SHA to build'
         required: true
         default: '1fdbca85aaea513c9cc6c14d347f76543346d3da'
-      recipe_commit:
-        description: 'BtbN/FFmpeg-Builds recipe commit SHA'
-        required: true
-        default: 'a99e8230eae00d1cee38f23076a7a1f55cd984e2'
       upload_release_asset:
         description: 'Upload built artifacts to current release if running on a tag'
         type: boolean
@@ -23,7 +19,7 @@ jobs:
   build-win64:
     name: Build FFmpeg win64-gpl and Corresponding Source
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 240
 
     steps:
       - name: Checkout Repository
@@ -34,39 +30,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends git curl xz-utils zip p7zip-full
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Verify Vendored Build Recipe
         run: |
           test -d third_party/ffmpeg-build-recipe/scripts.d
           test -f third_party/ffmpeg-build-recipe/build.sh
           test -f third_party/ffmpeg-build-recipe/generate.sh
-          echo "Vendored recipe verified."
+          test -f third_party/ffmpeg-build-recipe/makeimage.sh
+          echo "Using vendored FFmpeg build recipe (BtbN/FFmpeg-Builds at commit a99e8230eae00d1cee38f23076a7a1f55cd984e2)"
 
-      - name: Generate Dockerfile for Target win64-gpl
+      - name: Prepare Docker Build Image
         working-directory: third_party/ffmpeg-build-recipe
         run: |
           chmod +x *.sh util/*.sh
-          export TARGET="win64"
-          export VARIANT="gpl"
-          export ADDINS=("7.1")
-          ./generate.sh
+          ./makeimage.sh win64 gpl 7.1
 
-      - name: Download Dependency Sources and Run Cross Build
+      - name: Cross-Compile FFmpeg (win64-gpl-7.1)
         working-directory: third_party/ffmpeg-build-recipe
+        env:
+          GIT_BRANCH_OVERRIDE: ${{ inputs.ffmpeg_commit }}
         run: |
-          export TARGET="win64"
-          export VARIANT="gpl"
-          export ADDINS=("7.1")
-          export FFMPEG_REPO="https://github.com/FFmpeg/FFmpeg.git"
-          export GIT_BRANCH="${{ inputs.ffmpeg_commit }}"
-
-          # Run build using Docker container toolchain
-          ./build.sh
+          ./build.sh win64 gpl 7.1
 
       - name: Package Binaries and Calculate Checksums
         working-directory: third_party/ffmpeg-build-recipe
         run: |
           mkdir -p ../../dist-ffmpeg
-          cp artifacts/*.zip ../../dist-ffmpeg/ || true
+          cp artifacts/*.zip ../../dist-ffmpeg/
           cd ../../dist-ffmpeg
           sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
@@ -74,7 +66,7 @@ jobs:
       - name: Package Complete Corresponding Source Archive
         run: |
           mkdir -p dist-ffmpeg-source
-          node scripts/bundle-ffmpeg-corresponding-source.mjs --out dist-ffmpeg-source/FileCompressor-FFmpeg-Corresponding-Source-1.0.0.zip
+          node scripts/bundle-ffmpeg-corresponding-source.mjs --out dist-ffmpeg-source/FileCompressor-FFmpeg-BuildRecipe-and-SourceManifest-1.0.0.zip
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -84,4 +76,3 @@ jobs:
             dist-ffmpeg/*
             dist-ffmpeg-source/*
           retention-days: 90
-

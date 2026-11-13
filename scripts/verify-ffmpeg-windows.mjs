@@ -95,13 +95,14 @@ async function run() {
   }
 
   // -------------------------------------------------------------
-  // Test 2: CRF Mode H.264 + AAC Audio Compression
+  // Test 2: CRF / Quality Mode H.264 + AAC Audio Compression
   // -------------------------------------------------------------
   const outDirCrf = path.join(testDir, 'out_crf')
   fs.mkdirSync(outDirCrf, { recursive: true })
   const cfgCrf = createConfigForTier('small_size', outDirCrf)
-  cfgCrf.video.mode = 'crf'
+  cfgCrf.video.mode = 'quality'
   cfgCrf.video.crf = 28
+  cfgCrf.video.encoderPreset = 'slow'
   cfgCrf.video.audioMode = 'aac'
   cfgCrf.video.audioBitrateKbps = 128
 
@@ -120,7 +121,7 @@ async function run() {
   )
 
   log(
-    'Test 2: CRF Mode Result',
+    'Test 2: CRF / Quality Mode Result',
     `Status: ${resCrf.status}, Saved: ${resCrf.result?.savedPercent}%, Output: ${resCrf.result?.outputPath} (${resCrf.result?.outputSizeBytes} bytes)`
   )
   if (resCrf.status !== 'completed') {
@@ -163,13 +164,13 @@ async function run() {
   if (resTarget.status !== 'completed') {
     throw new Error(`2-pass target size failed with status: ${resTarget.status}`)
   }
-  // Check output is close to target (under 280,000 bytes)
-  if (resTarget.result.outputSizeBytes > 280000) {
-    throw new Error(`Output size ${resTarget.result.outputSizeBytes} exceeded target budget!`)
+  // Strict size check: output must not exceed the requested 250,000 bytes budget
+  if (resTarget.result.outputSizeBytes > 250000) {
+    throw new Error(`Output size ${resTarget.result.outputSizeBytes} exceeded strict target budget of 250,000 bytes!`)
   }
 
   // -------------------------------------------------------------
-  // Test 4: Vertical Video & Rotation Metadata
+  // Test 4: Vertical Video & Rotation Metadata Handling
   // -------------------------------------------------------------
   const verticalVideo = path.join(testDir, 'vertical_720x1280.mp4')
   execFileSync(
@@ -233,10 +234,11 @@ async function run() {
     throw new Error(`Rotation flag 90 degrees not detected: got ${probeRot.probe?.rotation}`)
   }
 
-  // Compress rotated video and ensure display matrix / orientation is handled
+  // Compress rotated video and ensure display matrix / orientation is properly preserved or transformed
   const outDirRot = path.join(testDir, 'out_rot')
   fs.mkdirSync(outDirRot, { recursive: true })
   const cfgRot = createConfigForTier('small_size', outDirRot)
+  cfgRot.video.mode = 'quality'
   const jobRot = makeJob({
     primarySourcePath: rotatedVideo,
     configSnapshot: cfgRot,
@@ -249,9 +251,25 @@ async function run() {
     () => {},
     new AbortController().signal
   )
-  log('Test 4c: Rotated Video Compress Result', `Status: ${resRot.status}`)
+  log('Test 4c: Rotated Video Compress Result', `Status: ${resRot.status}, Output: ${resRot.result?.outputPath}`)
   if (resRot.status !== 'completed') {
     throw new Error(`Compression of rotated video failed!`)
+  }
+  const probeRotOut = await probeVideoFile(resRot.result.outputPath)
+  if (!probeRotOut.probe) {
+    throw new Error(`Failed to probe compressed rotated output video!`)
+  }
+  log(
+    'Test 4c: Compressed Rotated Video Orientation',
+    `Resolution: ${probeRotOut.probe.width}x${probeRotOut.probe.height}, Rotation: ${probeRotOut.probe.rotation || 0}`
+  )
+  // Ensure the vertical aspect orientation is respected: either rotated directly in raster (width < height) or has 90/270 rotation tag
+  const isVerticalDisplay =
+    probeRotOut.probe.width < probeRotOut.probe.height ||
+    probeRotOut.probe.rotation === 90 ||
+    probeRotOut.probe.rotation === 270
+  if (!isVerticalDisplay) {
+    throw new Error(`Orientation mismatch: expected vertical display orientation (width < height or rotation flag 90/270)`)
   }
 
   // -------------------------------------------------------------
@@ -265,6 +283,7 @@ async function run() {
   const vnOutDir = path.join(testDir, 'Thư mục xuất - Ocean Labs Việt Nam')
   fs.mkdirSync(vnOutDir, { recursive: true })
   const cfgVn = createConfigForTier('small_size', vnOutDir)
+  cfgVn.video.mode = 'quality'
 
   const probeVn = await probeVideoFile(vnSource)
   if (!probeVn.probe) throw new Error(`Probe failed on Vietnamese path!`)
@@ -305,15 +324,20 @@ async function run() {
   const outDirCancel = path.join(testDir, 'out_cancel')
   fs.mkdirSync(outDirCancel, { recursive: true })
   const cfgCancel = createConfigForTier('balanced', outDirCancel)
-  cfgCancel.video.mode = 'crf'
+  cfgCancel.video.mode = 'quality'
   cfgCancel.video.crf = 18
-  cfgCancel.video.videoPreset = 'veryslow'
+  cfgCancel.video.encoderPreset = 'slow'
 
   const jobCancel = makeJob({
     primarySourcePath: stdVideo,
     configSnapshot: cfgCancel,
     probe: probe1
   })
+
+  const expectedTempDir = path.join(
+    outDirCancel,
+    `.fc_tmp_${jobCancel.id.replace(/[^a-zA-Z0-9_-]/g, '')}`
+  )
 
   // Abort after 80ms while ffmpeg is encoding
   setTimeout(() => {
@@ -334,7 +358,33 @@ async function run() {
     throw new Error(`Expected status 'cancelled', got: ${resCancel.status}`)
   }
 
-  // Verify original file preserved
+  // Verify temporary directory cleanup
+  if (fs.existsSync(expectedTempDir)) {
+    throw new Error(`FATAL: Temp dir ${expectedTempDir} was not cleaned up after cancellation!`)
+  }
+  const remainingTempEntries = fs.readdirSync(outDirCancel).filter((f) => f.startsWith('.fc_tmp_'))
+  if (remainingTempEntries.length > 0) {
+    throw new Error(`FATAL: Orphan temp entries remain in output directory: ${remainingTempEntries.join(', ')}`)
+  }
+  log('Test 6: Temp Cleanup Check', `Job temp folder cleaned up completely. No leftover temp files.`)
+
+  // Verify process tree termination
+  const safeJobId = jobCancel.id.replace(/[^a-zA-Z0-9_-]/g, '')
+  const orphanProcesses = execFileSync(
+    'powershell',
+    [
+      '-NoProfile',
+      '-Command',
+      `Get-CimInstance Win32_Process -Filter "Name = 'ffmpeg.exe'" | Where-Object { $_.CommandLine -like "*${safeJobId}*" } | Measure-Object | Select-Object -ExpandProperty Count`
+    ],
+    { encoding: 'utf8' }
+  ).trim()
+  if (Number(orphanProcesses) > 0) {
+    throw new Error(`FATAL: Orphan ffmpeg.exe process (${orphanProcesses}) still running after cancellation!`)
+  }
+  log('Test 6: Process Termination Check', `Process tree terminated cleanly. No orphan ffmpeg process detected.`)
+
+  // Verify original file preserved bit-for-bit
   const origStatAfter = fs.statSync(stdVideo)
   const origContentHashAfter = execFileSync(
     'powershell',
@@ -350,12 +400,13 @@ async function run() {
   log('Test 6: Safety Check', `Original file bit-for-bit preserved: SHA-256 intact.`)
 
   // -------------------------------------------------------------
-  // Test 7: Hardware Encoder Option Check
+  // Test 7: Hardware Encoder Option & Fallback Diagnostic
   // -------------------------------------------------------------
   const outDirHw = path.join(testDir, 'out_hw')
   fs.mkdirSync(outDirHw, { recursive: true })
   const cfgHw = createConfigForTier('small_size', outDirHw)
-  cfgHw.video.useHardwareEncoder = true // Enable GPU encoder
+  cfgHw.video.mode = 'quality'
+  cfgHw.video.useHardwareEncoder = true // Request GPU encoder
 
   const jobHw = makeJob({
     primarySourcePath: stdVideo,
@@ -363,17 +414,32 @@ async function run() {
     probe: probe1
   })
 
+  const hwLogs = []
   const resHw = await executeVideoJob(
     jobHw,
     probe1,
     (info) => console.log(`  [HW Progress] ${info.stage}: ${info.percent}%`),
-    () => {},
+    (msg) => {
+      hwLogs.push(msg)
+      console.log(`  [HW Log] ${msg}`)
+    },
     new AbortController().signal
   )
 
+  const isFallback =
+    Boolean(resHw.result?.warningMessage) ||
+    hwLogs.some((l) => l.includes('Hardware encoder không khả dụng') || l.includes('chuyển về libx264'))
+
   log(
     'Test 7: Hardware Acceleration Test',
-    `Status: ${resHw.status}, Codec used / summary: ${resHw.result?.validationSummary}`
+    `Status: ${resHw.status}\n` +
+    `Hardware Diagnostic: ${
+      isFallback
+        ? 'GPU hardware encoder unavailable on current hardware/driver; graceful automatic fallback to CPU libx264 succeeded.'
+        : 'GPU hardware encoder active and succeeded.'
+    }\n` +
+    `Validation Summary: ${resHw.result?.validationSummary || 'N/A'}\n` +
+    `Warning Message: ${resHw.result?.warningMessage || 'none'}`
   )
   if (resHw.status !== 'completed') {
     throw new Error(`Hardware acceleration test failed with status: ${resHw.status}`)
@@ -391,4 +457,3 @@ run().catch((err) => {
   console.error('[VERIFY-VIDEO ERROR]', err)
   process.exit(1)
 })
-

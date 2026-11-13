@@ -5,6 +5,8 @@ release/
 resources/bin/
 resources/qpdf-win64.zip
 resources/qpdf-extract/
+.cache/
+tmp-source-bundle-staging/
 tmp-test/
 coverage/
 local-handoff/

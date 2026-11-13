@@ -77,24 +77,11 @@ async function ensureFfmpegAndFfprobe(sevenZaPath) {
   const tmpZip = path.join(rootDir, 'resources', PINNED_FFMPEG_ZIP_NAME)
   const tmpExtract = path.join(rootDir, 'resources', 'ffmpeg-extract')
 
-  // Check local override or scratch cache
-  const scratchCache = path.join(
-    rootDir,
-    '..',
-    '..',
-    '..',
-    'Users',
-    'PC BUG',
-    '.gemini',
-    'antigravity',
-    'brain',
-    '309b5121-3406-4c1f-b3f0-93a2e9b62a0b',
-    'scratch',
-    'ffmpeg-71',
-    PINNED_FFMPEG_ZIP_NAME
-  )
+  // Check local override or project cache
+  const cacheDir = process.env.FFMPEG_CACHE_DIR || path.join(rootDir, '.cache')
+  const projectCache = path.join(cacheDir, PINNED_FFMPEG_ZIP_NAME)
   const localZipCandidate =
-    process.env.FFMPEG_WIN64_ZIP_PATH || (fs.existsSync(scratchCache) ? scratchCache : null)
+    process.env.FFMPEG_WIN64_ZIP_PATH || (fs.existsSync(projectCache) ? projectCache : null)
 
   if (localZipCandidate && fs.existsSync(localZipCandidate)) {
     console.log(

@@ -2,26 +2,14 @@ import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { getBinaryPath } from '../src/main/utils/binaries.ts'
 
 const rootDir = process.cwd()
-const scratchDir = path.join(
-  rootDir,
-  '..',
-  '..',
-  '..',
-  'Users',
-  'PC BUG',
-  '.gemini',
-  'antigravity',
-  'brain',
-  '309b5121-3406-4c1f-b3f0-93a2e9b62a0b',
-  'scratch'
-)
+const cacheDir = process.env.FFMPEG_SOURCE_CACHE_DIR || path.join(rootDir, '.cache')
 
 const FFMPEG_COMMIT = '1fdbca85aaea513c9cc6c14d347f76543346d3da'
 const FFMPEG_TAR_NAME = `FFmpeg-${FFMPEG_COMMIT}.tar.gz`
 const FFMPEG_TAR_URL = `https://github.com/FFmpeg/FFmpeg/archive/${FFMPEG_COMMIT}.tar.gz`
+const VERIFIED_FFMPEG_TAR_SHA256 = '1312ecd4b87383182530278450c204c27e6787d033b190a28072a149cca59ed3'
 
 function sha256File(filePath) {
   const hash = crypto.createHash('sha256')
@@ -29,25 +17,88 @@ function sha256File(filePath) {
   return hash.digest('hex')
 }
 
+function findZipTool() {
+  if (process.env.SEVEN_ZIP_PATH && fs.existsSync(process.env.SEVEN_ZIP_PATH)) {
+    return { type: '7z', exe: process.env.SEVEN_ZIP_PATH }
+  }
+  if (process.platform === 'win32') {
+    const candidate1 = path.join(rootDir, 'resources', 'bin', 'win32-x64', '7za.exe')
+    if (fs.existsSync(candidate1)) return { type: '7z', exe: candidate1 }
+    const candidate2 = path.join(rootDir, 'node_modules', '7zip-bin', 'win', 'x64', '7za.exe')
+    if (fs.existsSync(candidate2)) return { type: '7z', exe: candidate2 }
+  }
+  for (const t of ['7za', '7z', 'zip']) {
+    try {
+      execFileSync(t, ['--help'], { stdio: 'ignore' })
+      return { type: t === 'zip' ? 'zip' : '7z', exe: t }
+    } catch {
+      // tool not found in PATH
+    }
+  }
+  if (process.platform === 'win32') {
+    try {
+      execFileSync('tar.exe', ['--version'], { stdio: 'ignore' })
+      return { type: 'tar-zip', exe: 'tar.exe' }
+    } catch {}
+  }
+  throw new Error('No zip compression tool found (tried 7za, 7z, zip, tar.exe)')
+}
+
+function compressToZip(stagingDir, outZip) {
+  if (fs.existsSync(outZip)) {
+    fs.rmSync(outZip, { force: true })
+  }
+  const tool = findZipTool()
+  console.log(`[bundle-source] Compressing staging directory to ${outZip} using ${tool.exe} (${tool.type})...`)
+  if (tool.type === '7z') {
+    execFileSync(tool.exe, ['a', '-tzip', '-mx=9', outZip, path.join(stagingDir, '*')], {
+      stdio: 'ignore'
+    })
+  } else if (tool.type === 'zip') {
+    execFileSync(tool.exe, ['-9', '-r', outZip, '.'], {
+      cwd: stagingDir,
+      stdio: 'ignore'
+    })
+  } else if (tool.type === 'tar-zip') {
+    execFileSync(tool.exe, ['-a', '-cf', outZip, '*'], {
+      cwd: stagingDir,
+      stdio: 'ignore'
+    })
+  }
+}
+
 async function ensureFfmpegSourceTarball(destDir) {
-  const localCandidate = path.join(scratchDir, FFMPEG_TAR_NAME)
+  fs.mkdirSync(cacheDir, { recursive: true })
+  const cachedTar = path.join(cacheDir, FFMPEG_TAR_NAME)
   const targetTar = path.join(destDir, FFMPEG_TAR_NAME)
 
-  if (fs.existsSync(localCandidate)) {
-    console.log(`[bundle-source] Using cached FFmpeg tarball from scratch -> ${localCandidate}`)
-    fs.copyFileSync(localCandidate, targetTar)
-  } else {
-    console.log(`[bundle-source] Downloading FFmpeg source tarball from ${FFMPEG_TAR_URL}...`)
-    const res = await fetch(FFMPEG_TAR_URL, {
-      headers: { 'User-Agent': 'FileCompressor-SourceBundler' }
-    })
-    if (!res.ok) throw new Error(`Failed to download FFmpeg tarball: HTTP ${res.status}`)
-    const buf = Buffer.from(await res.arrayBuffer())
-    fs.writeFileSync(targetTar, buf)
+  if (fs.existsSync(cachedTar)) {
+    const cachedHash = sha256File(cachedTar)
+    if (cachedHash === VERIFIED_FFMPEG_TAR_SHA256) {
+      console.log(`[bundle-source] Using verified cached FFmpeg source tarball -> ${cachedTar}`)
+      fs.copyFileSync(cachedTar, targetTar)
+      return { targetTar, sha256: cachedHash }
+    } else {
+      console.warn(`[bundle-source] Cached FFmpeg tarball hash mismatch (${cachedHash}), re-downloading...`)
+    }
   }
 
-  const h = sha256File(targetTar)
-  console.log(`[bundle-source] Bundled FFmpeg source tarball: ${targetTar} (SHA-256: ${h})`)
+  console.log(`[bundle-source] Downloading FFmpeg source tarball from ${FFMPEG_TAR_URL}...`)
+  const res = await fetch(FFMPEG_TAR_URL, {
+    headers: { 'User-Agent': 'FileCompressor-SourceBundler' }
+  })
+  if (!res.ok) throw new Error(`Failed to download FFmpeg tarball: HTTP ${res.status}`)
+  const buf = Buffer.from(await res.arrayBuffer())
+  fs.writeFileSync(cachedTar, buf)
+
+  const h = sha256File(cachedTar)
+  if (h !== VERIFIED_FFMPEG_TAR_SHA256) {
+    throw new Error(
+      `Downloaded FFmpeg tarball SHA-256 mismatch!\nExpected: ${VERIFIED_FFMPEG_TAR_SHA256}\nReceived: ${h}`
+    )
+  }
+  fs.copyFileSync(cachedTar, targetTar)
+  console.log(`[bundle-source] Verified and bundled FFmpeg source tarball: ${targetTar} (SHA-256: ${h})`)
   return { targetTar, sha256: h }
 }
 
@@ -111,40 +162,36 @@ Gói tài liệu và mã nguồn tương ứng này được cung cấp theo Đi
 - ffmpeg.exe (SHA-256: efabedca4b599c13e073bb08f66369619e9deb1db1dc1f32822583379d6513de)
 - ffprobe.exe (SHA-256: 69743e70806215ffb64a25c94e6bd870903a4a50a212b0c9aeea0261368b07b2)
 
-Các thành phần trong gói này:
+A. Các thành phần được đính kèm trực tiếp trong gói lưu trữ này:
 1. FFmpeg-${FFMPEG_COMMIT}.tar.gz:
-   Toàn bộ cây mã nguồn chính xác của FFmpeg tại commit ${FFMPEG_COMMIT} (nhánh release/7.1, tag n7.1.5-12-g1fdbca85aa).
+   Toàn bộ cây mã nguồn chính xác của FFmpeg tại commit ${FFMPEG_COMMIT} (nhánh release/7.1, tag n7.1.5-12-g1fdbca85aa, SHA-256: ${VERIFIED_FFMPEG_TAR_SHA256}).
 2. ffmpeg-build-recipe/:
    Toàn bộ công thức build được ghim cố định từ repo https://github.com/FFmpeg-Builds/FFmpeg-Builds tại commit a99e8230eae00d1cee38f23076a7a1f55cd984e2, bao gồm:
-   - DEPENDENCY_SOURCE_MANIFEST.json: Manifest chi tiết của toàn bộ 120 thư viện phụ thuộc, URL upstream repository, mã commit git / bản sửa đổi SVN, các tệp vá lỗi (patches), cấu hình bản build và giấy phép.
-   - scripts.d/: Toàn bộ script shell định nghĩa quá trình tải và biên dịch từng thư viện phụ thuộc.
+   - DEPENDENCY_SOURCE_MANIFEST.json: Danh mục chi tiết toàn bộ 120 thư viện phụ thuộc, URL upstream repository, mã commit git / bản sửa đổi SVN, các tệp vá lỗi (patches), cấu hình bản build và giấy phép.
+   - scripts.d/: Toàn bộ 120 shell script định nghĩa quy trình cấu hình, cờ biên dịch và cài đặt của từng thư viện phụ thuộc.
    - patches/: Toàn bộ các bản vá (patches) được áp dụng trong quá trình biên dịch cross-compile x86_64-w64-mingw32.
    - images/: Cấu hình Dockerfile container và ct-ng-config (crosstool-NG 1.28.0.23_185f348, GCC 15.2.0, binutils 2.46.0, mingw-w64 v13.0.0 với UCRT runtime).
-   - build.sh, download.sh, generate.sh: Các script tự động hóa tải mã nguồn và biên dịch.
+   - build.sh, download.sh, generate.sh, makeimage.sh: Các script tự động hóa tải mã nguồn và biên dịch.
 3. documentation/:
-   - CORRESPONDING_SOURCE.md: Báo cáo đối chiếu và hướng dẫn lấy nguồn đầy đủ.
+   - CORRESPONDING_SOURCE.md: Báo cáo đối chiếu kỹ thuật và hướng dẫn lấy nguồn đầy đủ.
    - THIRD_PARTY_NOTICES.txt: Thông báo bản quyền và phân loại thư viện (gồm ngoại lệ Thư viện Hệ điều hành Windows).
    - BINARY_MANIFEST.json & FFMPEG_BUILD_INFO.txt: Bằng chứng kỹ thuật và cấu hình biên dịch chi tiết.
+
+B. Các thành phần được cung cấp qua liên kết tải về:
+- Cây mã nguồn của các thư viện phụ thuộc bên thứ ba (dav1d, x264, zlib, libvpx, libopus, v.v.) được cung cấp thông qua liên kết công khai tới các upstream repository với commit/revision cố định trong tệp DEPENDENCY_SOURCE_MANIFEST.json.
+- Người dùng có thể tự động tải toàn bộ cây nguồn này bằng cách chạy lệnh \`./download.sh\` trong thư mục \`ffmpeg-build-recipe\`, hoặc chạy GitHub Actions workflow \`.github/workflows/build-ffmpeg-source.yml\`.
 
 Hướng dẫn biên dịch tái lập:
 - Cách 1: Chạy workflow thủ công trên GitHub Actions: .github/workflows/build-ffmpeg-source.yml.
 - Cách 2: Sử dụng Docker trên máy Linux:
   cd ffmpeg-build-recipe
-  TARGET=win64 VARIANT=gpl ADDINS="7.1" ./generate.sh
-  TARGET=win64 VARIANT=gpl ADDINS="7.1" GIT_BRANCH="${FFMPEG_COMMIT}" ./build.sh
+  ./makeimage.sh win64 gpl 7.1
+  GIT_BRANCH_OVERRIDE="${FFMPEG_COMMIT}" ./build.sh win64 gpl 7.1
 `
   fs.writeFileSync(path.join(stagingDir, 'README.txt'), sourceReadme, 'utf8')
 
-  // 5. Compress using 7za.exe
-  const sevenZa = getBinaryPath('7za')
-  if (fs.existsSync(outZip)) {
-    fs.rmSync(outZip, { force: true })
-  }
-
-  console.log(`[bundle-source] Compressing staging directory to ${outZip}...`)
-  execFileSync(sevenZa, ['a', '-tzip', '-mx=9', outZip, path.join(stagingDir, '*')], {
-    stdio: 'ignore'
-  })
+  // 5. Compress
+  compressToZip(stagingDir, outZip)
 
   // Cleanup staging
   fs.rmSync(stagingDir, { recursive: true, force: true })
@@ -163,4 +210,3 @@ main().catch((err) => {
   console.error('[bundle-source ERROR]', err)
   process.exit(1)
 })
-

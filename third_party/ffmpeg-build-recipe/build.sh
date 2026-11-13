@@ -32,8 +32,15 @@ cat <<EOF >"$BUILD_SCRIPT"
     cd /ffbuild
     rm -rf ffmpeg prefix
 
-    git clone --filter=blob:none --branch='$GIT_BRANCH' '$FFMPEG_REPO' ffmpeg
+    git clone --filter=blob:none '$FFMPEG_REPO' ffmpeg
     cd ffmpeg
+    git checkout '$GIT_BRANCH'
+    ACTUAL_FFMPEG_COMMIT=\$(git rev-parse HEAD)
+    echo "Checked out FFmpeg commit: \$ACTUAL_FFMPEG_COMMIT"
+    if [[ -n "$GIT_BRANCH_OVERRIDE" && "\$ACTUAL_FFMPEG_COMMIT" != "$GIT_BRANCH_OVERRIDE"* ]]; then
+        echo "ERROR: Checked out commit \$ACTUAL_FFMPEG_COMMIT does not match requested GIT_BRANCH_OVERRIDE=$GIT_BRANCH_OVERRIDE"
+        exit 1
+    fi
 
     ./configure --prefix=/ffbuild/prefix --pkg-config-flags="--static" \$FFBUILD_TARGET_FLAGS \$FF_CONFIGURE \
         --extra-cflags="\$FF_CFLAGS" --extra-cxxflags="\$FF_CXXFLAGS" --extra-libs="\$FF_LIBS" \
