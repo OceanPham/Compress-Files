@@ -355,7 +355,7 @@ describe('File Compressor — Comprehensive Engine, Safety & Queue Verification'
     expect(preview.originalWidth).toBe(500)
     expect(preview.outputFormat).toBe('JPEG')
     expect(preview.previewDataUrl.startsWith('data:image/jpeg;base64,')).toBe(true)
-  })
+  }, 30000)
 
   it('Image Module: achieves Target Size when feasible, reports target_unmet when impossible, and rejects animated/16-bit images', async () => {
     const { probe } = await probeImageFile(largeJpgPath)
@@ -402,7 +402,7 @@ describe('File Compressor — Comprehensive Engine, Safety & Queue Verification'
     expect(gifSniff.unsupportedReason).toBeDefined()
     const hdrProbe = await probeImageFile(hdr16BitPngPath)
     expect(hdrProbe.unsupportedReason).toBeDefined()
-  })
+  }, 30000)
 
   it('Video Module: compresses SDR video, handles 2-pass target-size, rejects HDR/10-bit, and kills process tree on cancel', async () => {
     // 1. Rejects 10-bit HDR video

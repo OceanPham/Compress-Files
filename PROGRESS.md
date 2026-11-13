@@ -52,6 +52,22 @@
   - Chuẩn hóa `scripts/prepare-binaries.mjs`: Loại bỏ đường dẫn fallback phụ thuộc máy cá nhân, ghim cứng QPDF `v12.4.2` (`qpdf-12.4.2-msvc64.zip`) kèm kiểm tra SHA-256 `1bdaf878f37eaffea1ea3c30591214c77636a0f2fc7432427516b6e22e36c0ff`, xuất đầy đủ cấu hình biên dịch (`--enable-gpl --enable-version3`) và danh sách DLL runtime vào `resources/notices/BINARY_MANIFEST.json`.
   - Bổ sung toàn văn giấy phép GNU GPLv3 tại `LICENSE` và `resources/notices/LICENSE-GPLv3.txt`, thông tin build FFmpeg tại `resources/notices/FFMPEG_BUILD_INFO.txt`, nhật ký phiên bản `CHANGELOG.md` và ghi chú phát hành `docs/RELEASE_NOTES_v1.0.0.md`.
 
+## Quản lý Chủ động Bộ Binary FFmpeg & Hoàn tất Corresponding Source — 2026-11-13
+- **Chuyển đổi bộ binary đồng nhất (Unified Build)**:
+  - Thay thế toàn bộ `ffmpeg.exe` (Gyan 6.0 cũ) và `ffprobe.exe` (Zeranoe 4.0.2 cũ) sang bản build đồng nhất từ [BtbN/FFmpeg-Builds](https://github.com/FFmpeg-Builds/FFmpeg-Builds) (tag `autobuild-2026-07-31-14-10`, GCC 15.2.0, commit `1fdbca85aaea513c9cc6c14d347f76543346d3da`, ghim 120 thư viện phụ thuộc).
+  - Gỡ bỏ hoàn toàn dependency không còn dùng `ffmpeg-static` và `ffprobe-static` khỏi `package.json`.
+  - Cập nhật `scripts/prepare-binaries.mjs` kiểm tra mã băm SHA-256 nghiêm ngặt cho tệp zip, `ffmpeg.exe` (`efabedca4b59...`) và `ffprobe.exe` (`69743e708062...`).
+- **Lưu trữ công thức build & gói mã nguồn phát hành**:
+  - Lưu trữ toàn bộ công thức build vào thư mục `third_party/ffmpeg-build-recipe/` kèm `DEPENDENCY_SOURCE_MANIFEST.json`.
+  - Tạo script `scripts/bundle-ffmpeg-corresponding-source.mjs` tạo gói phát hành `release/FileCompressor-FFmpeg-BuildRecipe-and-SourceManifest-1.0.0.zip` (`15.30 MB`, SHA-256: `2120cc865dfdf0423ea1bdefbdb24ee6c21d77f00e3a89b621f587793af12217`).
+  - Chuẩn bị workflow GitHub Actions `.github/workflows/build-ffmpeg-source.yml` cho phép tự động biên dịch lại trên nền tảng Linux độc lập.
+- **Kiểm thử chuyên sâu 7 hạng mục trên Windows**:
+  - Viết và chạy `scripts/verify-ffmpeg-windows.mjs`: Kiểm tra đọc thông tin SDR/khung hình, nén CRF kèm âm thanh AAC, nén dung lượng mục tiêu 2-Pass (250 KB), video dọc 720x1280 & cờ xoay Display Matrix 90 độ, đường dẫn và tên file có dấu tiếng Việt Unicode, hủy tác vụ đang chạy (`AbortController`) bảo toàn file gốc nguyên vẹn, và kiểm tra tăng tốc phần cứng GPU: **Tất cả 7/7 bài kiểm tra đạt 100%**.
+  - Toàn bộ test suite tự động `npm test` đạt **10/10 PASS**.
+- **Đóng gói lại bộ cài đặt Setup .exe**:
+  - Build lại `release/File Compressor-Setup-1.0.0-x64.exe` (`172,059,165 bytes`, SHA-256: `40BD37AF571E13A435CE691DFFCDD05B6953B920DEA2E8FA5F18371F8285CF2B`).
+  - Kiểm tra các binary bên trong `release/win-unpacked/resources/bin` khớp 100% với `BINARY_MANIFEST.json`.
+
 ## Known Issues & Hướng phát triển tiếp theo
 - **Known Issues**: Không có lỗi chặn. Bản cài đặt `.exe` hiện chưa ký chứng thư số thương mại (Unsigned build) nên Windows SmartScreen có thể hiển thị thông báo xác nhận khi chạy trên máy khác.
 - **Hướng tiếp theo (Future Scope)**:

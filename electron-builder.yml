@@ -15,6 +15,7 @@ files:
   - '!tests/*'
   - '!docs/*'
   - '!scripts/*'
+  - '!third_party/*'
   - '!local-handoff/*'
   - '!tmp-test/*'
   - '!coverage/*'

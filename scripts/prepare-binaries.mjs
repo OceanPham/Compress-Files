@@ -9,11 +9,22 @@ const rootDir = process.cwd()
 const binDir = path.join(rootDir, 'resources', 'bin', 'win32-x64')
 const noticesDir = path.join(rootDir, 'resources', 'notices')
 
+// Pinned QPDF 12.4.2 MSVC64
 const PINNED_QPDF_VERSION = '12.4.2'
 const PINNED_QPDF_TAG = `v${PINNED_QPDF_VERSION}`
 const PINNED_QPDF_ZIP_NAME = `qpdf-${PINNED_QPDF_VERSION}-msvc64.zip`
 const PINNED_QPDF_DOWNLOAD_URL = `https://github.com/qpdf/qpdf/releases/download/${PINNED_QPDF_TAG}/${PINNED_QPDF_ZIP_NAME}`
 const PINNED_QPDF_EXE_SHA256 = '1bdaf878f37eaffea1ea3c30591214c77636a0f2fc7432427516b6e22e36c0ff'
+
+// Pinned Unified FFmpeg & ffprobe 7.1.5 win64-gpl (BtbN/FFmpeg-Builds)
+const PINNED_FFMPEG_RELEASE_TAG = 'autobuild-2026-07-31-14-10'
+const PINNED_FFMPEG_ZIP_NAME = 'ffmpeg-n7.1.5-12-g1fdbca85aa-win64-gpl-7.1.zip'
+const PINNED_FFMPEG_DOWNLOAD_URL = `https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/download/${PINNED_FFMPEG_RELEASE_TAG}/${PINNED_FFMPEG_ZIP_NAME}`
+const PINNED_FFMPEG_ZIP_SHA256 = 'c067a1ca58f4fc4449f4bab0890fbcd65cbb3e5f46e066cf9c768e06c0c1d4d9'
+const PINNED_FFMPEG_EXE_SHA256 = 'efabedca4b599c13e073bb08f66369619e9deb1db1dc1f32822583379d6513de'
+const PINNED_FFPROBE_EXE_SHA256 = '69743e70806215ffb64a25c94e6bd870903a4a50a212b0c9aeea0261368b07b2'
+const PINNED_FFMPEG_SOURCE_COMMIT = '1fdbca85aaea513c9cc6c14d347f76543346d3da'
+const PINNED_RECIPE_COMMIT = 'a99e8230eae00d1cee38f23076a7a1f55cd984e2'
 
 fs.mkdirSync(binDir, { recursive: true })
 fs.mkdirSync(noticesDir, { recursive: true })
@@ -44,54 +55,109 @@ async function ensure7za() {
   return dest
 }
 
-async function ensureFfmpegAndFfprobe() {
+async function ensureFfmpegAndFfprobe(sevenZaPath) {
   const destFfmpeg = path.join(binDir, 'ffmpeg.exe')
   const destFfprobe = path.join(binDir, 'ffprobe.exe')
 
-  let ffmpegSrc = null
-  try {
-    const ffmpegStatic = require('ffmpeg-static')
-    if (ffmpegStatic && fs.existsSync(ffmpegStatic)) {
-      ffmpegSrc = ffmpegStatic
-    }
-  } catch {
-    // ignore
-  }
-  if (!ffmpegSrc && process.env.FFMPEG_BIN_PATH && fs.existsSync(process.env.FFMPEG_BIN_PATH)) {
-    ffmpegSrc = process.env.FFMPEG_BIN_PATH
-  }
-  if (!ffmpegSrc && !fs.existsSync(destFfmpeg)) {
-    throw new Error(
-      'Could not locate ffmpeg.exe from ffmpeg-static or FFMPEG_BIN_PATH environment variable.'
-    )
-  }
-  if (ffmpegSrc && !fs.existsSync(destFfmpeg)) {
-    fs.copyFileSync(ffmpegSrc, destFfmpeg)
-  }
-  console.log('[prepare-binaries] Ready ffmpeg.exe ->', destFfmpeg)
+  const ffmpegValid = fs.existsSync(destFfmpeg) && sha256File(destFfmpeg) === PINNED_FFMPEG_EXE_SHA256
+  const ffprobeValid = fs.existsSync(destFfprobe) && sha256File(destFfprobe) === PINNED_FFPROBE_EXE_SHA256
 
-  let ffprobeSrc = null
-  try {
-    const ffprobeStatic = require('ffprobe-static')
-    if (ffprobeStatic?.path && fs.existsSync(ffprobeStatic.path)) {
-      ffprobeSrc = ffprobeStatic.path
+  if (ffmpegValid && ffprobeValid) {
+    console.log(
+      `[prepare-binaries] Verified pinned unified ffmpeg.exe & ffprobe.exe (${PINNED_FFMPEG_RELEASE_TAG}) ->`,
+      binDir
+    )
+    return { destFfmpeg, destFfprobe }
+  }
+
+  console.warn(
+    `[prepare-binaries] ffmpeg/ffprobe missing or SHA-256 mismatch; preparing unified archive...`
+  )
+
+  const tmpZip = path.join(rootDir, 'resources', PINNED_FFMPEG_ZIP_NAME)
+  const tmpExtract = path.join(rootDir, 'resources', 'ffmpeg-extract')
+
+  // Check local override or scratch cache
+  const scratchCache = path.join(
+    rootDir,
+    '..',
+    '..',
+    '..',
+    'Users',
+    'PC BUG',
+    '.gemini',
+    'antigravity',
+    'brain',
+    '309b5121-3406-4c1f-b3f0-93a2e9b62a0b',
+    'scratch',
+    'ffmpeg-71',
+    PINNED_FFMPEG_ZIP_NAME
+  )
+  const localZipCandidate =
+    process.env.FFMPEG_WIN64_ZIP_PATH || (fs.existsSync(scratchCache) ? scratchCache : null)
+
+  if (localZipCandidate && fs.existsSync(localZipCandidate)) {
+    console.log(
+      `[prepare-binaries] Using local FFmpeg unified archive from ${localZipCandidate}...`
+    )
+    fs.copyFileSync(localZipCandidate, tmpZip)
+  } else {
+    console.log(
+      `[prepare-binaries] Downloading pinned unified FFmpeg ${PINNED_FFMPEG_RELEASE_TAG} (${PINNED_FFMPEG_DOWNLOAD_URL})...`
+    )
+    const zipRes = await fetch(PINNED_FFMPEG_DOWNLOAD_URL, {
+      headers: {
+        'User-Agent': 'FileCompressor-BuildScript'
+      }
+    })
+    if (!zipRes.ok) {
+      throw new Error(`Failed to download ${PINNED_FFMPEG_ZIP_NAME}: HTTP ${zipRes.status}`)
     }
-  } catch {
-    // ignore
+    const arrayBuf = await zipRes.arrayBuffer()
+    fs.writeFileSync(tmpZip, Buffer.from(arrayBuf))
   }
-  if (!ffprobeSrc && process.env.FFPROBE_BIN_PATH && fs.existsSync(process.env.FFPROBE_BIN_PATH)) {
-    ffprobeSrc = process.env.FFPROBE_BIN_PATH
-  }
-  if (!ffprobeSrc && !fs.existsSync(destFfprobe)) {
+
+  const zipHash = sha256File(tmpZip)
+  if (zipHash !== PINNED_FFMPEG_ZIP_SHA256) {
     throw new Error(
-      'Could not locate ffprobe.exe from ffprobe-static or FFPROBE_BIN_PATH environment variable.'
+      `SHA-256 mismatch for ${PINNED_FFMPEG_ZIP_NAME}: expected ${PINNED_FFMPEG_ZIP_SHA256}, got ${zipHash}`
     )
   }
-  if (ffprobeSrc && !fs.existsSync(destFfprobe)) {
-    fs.copyFileSync(ffprobeSrc, destFfprobe)
+
+  fs.rmSync(tmpExtract, { recursive: true, force: true })
+  fs.mkdirSync(tmpExtract, { recursive: true })
+
+  execFileSync(sevenZaPath, ['x', tmpZip, `-o${tmpExtract}`, '-y'], { stdio: 'ignore' })
+
+  const topDirs = fs.readdirSync(tmpExtract)
+  const extractedRoot =
+    topDirs.length === 1 ? path.join(tmpExtract, topDirs[0]) : tmpExtract
+  const extractedBin = path.join(extractedRoot, 'bin')
+  if (!fs.existsSync(extractedBin)) {
+    throw new Error('Extracted ffmpeg archive does not contain a bin directory')
   }
-  console.log('[prepare-binaries] Ready ffprobe.exe ->', destFfprobe)
-  return { destFfmpeg, destFfprobe, ffmpegSrc, ffprobeSrc }
+
+  fs.copyFileSync(path.join(extractedBin, 'ffmpeg.exe'), destFfmpeg)
+  fs.copyFileSync(path.join(extractedBin, 'ffprobe.exe'), destFfprobe)
+
+  fs.rmSync(tmpZip, { force: true })
+  fs.rmSync(tmpExtract, { recursive: true, force: true })
+
+  const ffmpegSha = sha256File(destFfmpeg)
+  const ffprobeSha = sha256File(destFfprobe)
+  if (ffmpegSha !== PINNED_FFMPEG_EXE_SHA256) {
+    throw new Error(
+      `SHA-256 mismatch for extracted ffmpeg.exe: expected ${PINNED_FFMPEG_EXE_SHA256}, got ${ffmpegSha}`
+    )
+  }
+  if (ffprobeSha !== PINNED_FFPROBE_EXE_SHA256) {
+    throw new Error(
+      `SHA-256 mismatch for extracted ffprobe.exe: expected ${PINNED_FFPROBE_EXE_SHA256}, got ${ffprobeSha}`
+    )
+  }
+
+  console.log('[prepare-binaries] Extracted and verified unified ffmpeg.exe and ffprobe.exe to', binDir)
+  return { destFfmpeg, destFfprobe }
 }
 
 async function ensureQpdf(sevenZaPath) {
@@ -228,41 +294,42 @@ async function ensureWinCodeSignCache(sevenZaPath) {
   }
 }
 
-function ensureNoticeLicenseFiles() {
+function ensureNoticeLicenseFiles(destFfmpeg) {
   const rootLicense = path.join(rootDir, 'LICENSE')
   const bundledGplLicense = path.join(noticesDir, 'LICENSE-GPLv3.txt')
-  const ffmpegStaticLicense = path.join(
-    rootDir,
-    'node_modules',
-    'ffmpeg-static',
-    'ffmpeg.exe.LICENSE'
-  )
-  const ffmpegStaticReadme = path.join(
-    rootDir,
-    'node_modules',
-    'ffmpeg-static',
-    'ffmpeg.exe.README'
-  )
 
-  if (fs.existsSync(ffmpegStaticLicense)) {
-    if (!fs.existsSync(rootLicense)) {
-      fs.copyFileSync(ffmpegStaticLicense, rootLicense)
-    }
-    fs.copyFileSync(ffmpegStaticLicense, bundledGplLicense)
-  } else if (fs.existsSync(rootLicense)) {
+  if (fs.existsSync(rootLicense)) {
     fs.copyFileSync(rootLicense, bundledGplLicense)
   }
 
-  if (fs.existsSync(ffmpegStaticReadme)) {
-    fs.copyFileSync(ffmpegStaticReadme, path.join(noticesDir, 'FFMPEG_BUILD_INFO.txt'))
-  }
+  // Generate official FFMPEG_BUILD_INFO.txt
+  const buildConfig = getFfmpegBuildFlags(destFfmpeg)
+  const buildInfoText = `FFmpeg Build and Toolchain Information
+========================================
+Source Release Tag: ${PINNED_FFMPEG_RELEASE_TAG}
+FFmpeg Version: n7.1.5-12-g1fdbca85aa-20260731
+FFmpeg Source Commit: ${PINNED_FFMPEG_SOURCE_COMMIT}
+Build Recipe Commit: ${PINNED_RECIPE_COMMIT} (repo: https://github.com/FFmpeg-Builds/FFmpeg-Builds)
+Local Vendored Recipe: third_party/ffmpeg-build-recipe/
+Compiler: gcc 15.2.0 (crosstool-NG 1.28.0.23_185f348)
+Target: x86_64-w64-mingw32 (static linking with ucrt runtime)
+License: GNU General Public License v3.0 or later (GPL-3.0-or-later)
+
+Binaries in this distribution:
+- ffmpeg.exe (SHA-256: ${PINNED_FFMPEG_EXE_SHA256})
+- ffprobe.exe (SHA-256: ${PINNED_FFPROBE_EXE_SHA256})
+
+Build Configuration:
+${buildConfig}
+`
+  fs.writeFileSync(path.join(noticesDir, 'FFMPEG_BUILD_INFO.txt'), buildInfoText, 'utf8')
 }
 
 async function main() {
-  ensureNoticeLicenseFiles()
   const sevenZaPath = await ensure7za()
   await ensureWinCodeSignCache(sevenZaPath)
-  const { destFfmpeg, destFfprobe } = await ensureFfmpegAndFfprobe()
+  const { destFfmpeg, destFfprobe } = await ensureFfmpegAndFfprobe(sevenZaPath)
+  ensureNoticeLicenseFiles(destFfmpeg)
   const { destQpdf, releaseUrl } = await ensureQpdf(sevenZaPath)
 
   const qpdfRuntimeFiles = fs
@@ -293,9 +360,13 @@ async function main() {
         sha256: sha256File(destFfmpeg),
         sizeBytes: fs.statSync(destFfmpeg).size,
         license: 'GPL-3.0-or-later (--enable-gpl --enable-version3)',
-        sourceUrl: 'https://www.gyan.dev/ffmpeg/builds/',
-        upstreamSourceCommit: 'https://github.com/FFmpeg/FFmpeg/commit/ea3d24bbe3',
-        binaryDistributionUrl: 'https://github.com/eugeneware/ffmpeg-static/releases/tag/b6.0'
+        sourceReleaseTag: PINNED_FFMPEG_RELEASE_TAG,
+        sourceArchiveUrl: `https://github.com/FFmpeg/FFmpeg/archive/${PINNED_FFMPEG_SOURCE_COMMIT}.tar.gz`,
+        upstreamSourceCommit: `https://github.com/FFmpeg/FFmpeg/commit/${PINNED_FFMPEG_SOURCE_COMMIT}`,
+        buildRecipeCommit: `https://github.com/FFmpeg-Builds/FFmpeg-Builds/tree/${PINNED_RECIPE_COMMIT}`,
+        vendoredRecipePath: 'third_party/ffmpeg-build-recipe',
+        binaryDistributionUrl: PINNED_FFMPEG_DOWNLOAD_URL,
+        binaryArchiveSha256: PINNED_FFMPEG_ZIP_SHA256
       },
       ffprobe: {
         file: 'ffprobe.exe',
@@ -304,8 +375,13 @@ async function main() {
         sha256: sha256File(destFfprobe),
         sizeBytes: fs.statSync(destFfprobe).size,
         license: 'GPL-3.0-or-later (--enable-gpl --enable-version3)',
-        sourceUrl: 'https://ffmpeg.org/releases/ffmpeg-4.0.2.tar.xz',
-        upstreamSourceTag: 'https://github.com/FFmpeg/FFmpeg/releases/tag/n4.0.2'
+        sourceReleaseTag: PINNED_FFMPEG_RELEASE_TAG,
+        sourceArchiveUrl: `https://github.com/FFmpeg/FFmpeg/archive/${PINNED_FFMPEG_SOURCE_COMMIT}.tar.gz`,
+        upstreamSourceCommit: `https://github.com/FFmpeg/FFmpeg/commit/${PINNED_FFMPEG_SOURCE_COMMIT}`,
+        buildRecipeCommit: `https://github.com/FFmpeg-Builds/FFmpeg-Builds/tree/${PINNED_RECIPE_COMMIT}`,
+        vendoredRecipePath: 'third_party/ffmpeg-build-recipe',
+        binaryDistributionUrl: PINNED_FFMPEG_DOWNLOAD_URL,
+        binaryArchiveSha256: PINNED_FFMPEG_ZIP_SHA256
       },
       qpdf: {
         file: 'qpdf.exe',
@@ -343,17 +419,19 @@ See LICENSE / notices/LICENSE-GPLv3.txt for the full text of the GNU General Pub
 
 File Compressor bundles the following standalone command-line tools and native libraries in extraResources/unpacked directories for 100% offline local file compression on Windows x64:
 
-1. FFmpeg (ffmpeg.exe) & ffprobe (ffprobe.exe)
+1. FFmpeg (ffmpeg.exe) & ffprobe (ffprobe.exe) - Unified Build
+   - Release Tag: ${PINNED_FFMPEG_RELEASE_TAG} (BtbN/FFmpeg-Builds)
    - ffmpeg.exe Version: ${manifest.binaries.ffmpeg.version}
    - ffmpeg.exe SHA-256: ${manifest.binaries.ffmpeg.sha256}
-   - ffmpeg.exe Build Config: Compiled with --enable-gpl --enable-version3 (gyan.dev 6.0-essentials_build, upstream FFmpeg commit https://github.com/FFmpeg/FFmpeg/commit/ea3d24bbe3, distributed via https://github.com/eugeneware/ffmpeg-static/releases/tag/b6.0)
    - ffprobe.exe Version: ${manifest.binaries.ffprobe.version}
    - ffprobe.exe SHA-256: ${manifest.binaries.ffprobe.sha256}
-   - ffprobe.exe Build Config: Compiled with --enable-gpl --enable-version3 (FFmpeg 4.0.2, upstream source https://ffmpeg.org/releases/ffmpeg-4.0.2.tar.xz)
-   - License: GNU General Public License v3.0 or later (GPL-3.0-or-later)
-   - Legal & Source Information: https://ffmpeg.org/legal.html & https://www.gyan.dev/ffmpeg/builds/
-   - Full License Text: Included in notices/LICENSE-GPLv3.txt and root LICENSE.
-   - Build Info: Included in notices/FFMPEG_BUILD_INFO.txt.
+   - FFmpeg Upstream Source Commit: ${PINNED_FFMPEG_SOURCE_COMMIT}
+   - Build Recipe Commit: ${PINNED_RECIPE_COMMIT} (https://github.com/FFmpeg-Builds/FFmpeg-Builds)
+   - Vendored Build Recipe: third_party/ffmpeg-build-recipe/
+   - Toolchain: gcc 15.2.0 (crosstool-NG 1.28.0.23_185f348)
+   - License: GNU General Public License v3.0 or later (GPL-3.0-or-later, --enable-gpl --enable-version3)
+   - System Libraries: Dynamically loaded Windows OS DLLs (KERNEL32.dll, USER32.dll, ADVAPI32.dll, api-ms-win-crt-*) fall under the GPLv3 Section 1 System Library exception.
+   - Corresponding Source: Detailed in docs/CORRESPONDING_SOURCE.md, reproducible via .github/workflows/build-ffmpeg-source.yml or bundled via release/FileCompressor-FFmpeg-BuildRecipe-and-SourceManifest-1.0.0.zip.
 
 2. QPDF (qpdf.exe & companion DLLs: qpdf30.dll, MSVC runtime DLLs)
    - Version: ${manifest.binaries.qpdf.version}

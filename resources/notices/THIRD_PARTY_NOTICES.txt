@@ -6,17 +6,19 @@ See LICENSE / notices/LICENSE-GPLv3.txt for the full text of the GNU General Pub
 
 File Compressor bundles the following standalone command-line tools and native libraries in extraResources/unpacked directories for 100% offline local file compression on Windows x64:
 
-1. FFmpeg (ffmpeg.exe) & ffprobe (ffprobe.exe)
-   - ffmpeg.exe Version: ffmpeg version 6.0-essentials_build-www.gyan.dev Copyright (c) 2000-2023 the FFmpeg developers | built with gcc 12.2.0 (Rev10, Built by MSYS2 project)
-   - ffmpeg.exe SHA-256: e9fd5e711debab9d680955fc1e38a2c1160fd280b144476cc3f62bc43ef49db1
-   - ffmpeg.exe Build Config: Compiled with --enable-gpl --enable-version3 (gyan.dev 6.0-essentials_build, upstream FFmpeg commit https://github.com/FFmpeg/FFmpeg/commit/ea3d24bbe3, distributed via https://github.com/eugeneware/ffmpeg-static/releases/tag/b6.0)
-   - ffprobe.exe Version: ffprobe version 4.0.2 Copyright (c) 2007-2018 the FFmpeg developers | built with gcc 7.3.1 (GCC) 20180722
-   - ffprobe.exe SHA-256: 4303ec85855340689b1f8aa5d9c1dc06ef3e3090682de3034edc3fca2b0798d5
-   - ffprobe.exe Build Config: Compiled with --enable-gpl --enable-version3 (FFmpeg 4.0.2, upstream source https://ffmpeg.org/releases/ffmpeg-4.0.2.tar.xz)
-   - License: GNU General Public License v3.0 or later (GPL-3.0-or-later)
-   - Legal & Source Information: https://ffmpeg.org/legal.html & https://www.gyan.dev/ffmpeg/builds/
-   - Full License Text: Included in notices/LICENSE-GPLv3.txt and root LICENSE.
-   - Build Info: Included in notices/FFMPEG_BUILD_INFO.txt.
+1. FFmpeg (ffmpeg.exe) & ffprobe (ffprobe.exe) - Unified Build
+   - Release Tag: autobuild-2026-07-31-14-10 (BtbN/FFmpeg-Builds)
+   - ffmpeg.exe Version: ffmpeg version n7.1.5-12-g1fdbca85aa-20260731 Copyright (c) 2000-2026 the FFmpeg developers | built with gcc 15.2.0 (crosstool-NG 1.28.0.23_185f348)
+   - ffmpeg.exe SHA-256: efabedca4b599c13e073bb08f66369619e9deb1db1dc1f32822583379d6513de
+   - ffprobe.exe Version: ffprobe version n7.1.5-12-g1fdbca85aa-20260731 Copyright (c) 2007-2026 the FFmpeg developers | built with gcc 15.2.0 (crosstool-NG 1.28.0.23_185f348)
+   - ffprobe.exe SHA-256: 69743e70806215ffb64a25c94e6bd870903a4a50a212b0c9aeea0261368b07b2
+   - FFmpeg Upstream Source Commit: 1fdbca85aaea513c9cc6c14d347f76543346d3da
+   - Build Recipe Commit: a99e8230eae00d1cee38f23076a7a1f55cd984e2 (https://github.com/FFmpeg-Builds/FFmpeg-Builds)
+   - Vendored Build Recipe: third_party/ffmpeg-build-recipe/
+   - Toolchain: gcc 15.2.0 (crosstool-NG 1.28.0.23_185f348)
+   - License: GNU General Public License v3.0 or later (GPL-3.0-or-later, --enable-gpl --enable-version3)
+   - System Libraries: Dynamically loaded Windows OS DLLs (KERNEL32.dll, USER32.dll, ADVAPI32.dll, api-ms-win-crt-*) fall under the GPLv3 Section 1 System Library exception.
+   - Corresponding Source: Detailed in docs/CORRESPONDING_SOURCE.md, reproducible via .github/workflows/build-ffmpeg-source.yml or bundled via release/FileCompressor-FFmpeg-BuildRecipe-and-SourceManifest-1.0.0.zip.
 
 2. QPDF (qpdf.exe & companion DLLs: qpdf30.dll, MSVC runtime DLLs)
    - Version: qpdf version 12.4.2 | Run qpdf --copyright to see copyright and license information.

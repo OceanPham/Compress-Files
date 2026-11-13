@@ -97,7 +97,7 @@ Sau khi chạy `npm run dist:win`, bộ cài đặt được xuất tại:
   - `QPDF 12.4.2`: `Apache-2.0`.
   - `7-Zip Standalone Console (7za 21.07)`: `LGPL-2.1-or-later` + `BSD-3-Clause`.
   - `Sharp 0.33.5` & `libvips 8.15.3`: `Apache-2.0` / `LGPL-2.1-or-later`.
-  - Chi tiết phiên bản, cấu hình build, mã băm SHA-256 và trạng thái xác minh **Mã nguồn tương ứng (Corresponding Source)** (bao gồm các phần đã xác minh và các thư viện liên kết tĩnh của `ffmpeg.exe`/`ffprobe.exe` đang chờ bổ sung nguồn trước khi chốt phát hành công khai) được ghi rõ tại [`docs/CORRESPONDING_SOURCE.md`](docs/CORRESPONDING_SOURCE.md) và [`docs/THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md).
+  - Chi tiết phiên bản, cấu hình build, mã băm SHA-256 và hồ sơ đối chiếu **Mã nguồn tương ứng (Corresponding Source)** hoàn chỉnh (gồm bản build đồng nhất FFmpeg 7.1.5, ghim 120 thư viện, gói mã nguồn phát hành và workflow GitHub Actions tái lập) được ghi rõ tại [`docs/CORRESPONDING_SOURCE.md`](docs/CORRESPONDING_SOURCE.md) và [`docs/THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md).
 
 ---
 
