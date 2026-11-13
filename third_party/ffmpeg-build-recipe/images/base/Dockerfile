@@ -33,7 +33,12 @@ RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --no-modify-path && \
     cargo install cargo-c && rm -rf "${CARGO_HOME}"/registry "${CARGO_HOME}"/git
 
 RUN --mount=src=.,dst=/input \
-    for s in /input/*.sh; do cp $s /usr/bin/$(echo $s | sed -e 's|.*/||' -e 's/\.sh$//'); done
+    set -eu; \
+    for s in /input/*.sh; do \
+        dest="/usr/bin/$(basename "$s" .sh)"; \
+        install -m 0755 "$s" "$dest"; \
+        test -x "$dest"; \
+    done
 
 ENV HOST_CC="gcc" \
     HOST_CXX="g++" \
